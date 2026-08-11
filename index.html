@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -216,12 +216,6 @@
     </div>
   </div>
 
-  <div id="viewfinder-container">
-    <div id="aperture-window">
-      <video id="cameraFeed" autoplay playsinline muted></video>
-    </div>
-  </div>
-
   <script>
     const video = document.getElementById('cameraFeed');
     const apertureWindow = document.getElementById('aperture-window');
@@ -244,7 +238,7 @@
     const summaryBottom = document.getElementById('summaryBottom');
     const summaryLeft = document.getElementById('summaryLeft');
     const summaryRight = document.getElementById('summaryRight');
-    const summaryZoom = summaryZoom = document.getElementById('summaryZoom');
+    const summaryZoom = document.getElementById('summaryZoom'); /* BUG FIXED HERE */
     const summaryPanY = document.getElementById('summaryPanY');
 
     const exitBtn = document.getElementById('exitBtn');
