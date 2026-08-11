@@ -216,142 +216,154 @@
     </div>
   </div>
 
+  <div id="viewfinder-container">
+    <div id="aperture-window">
+      <video id="cameraFeed" autoplay playsinline muted></video>
+    </div>
+  </div>
+
   <script>
-    const video = document.getElementById('cameraFeed');
-    const apertureWindow = document.getElementById('aperture-window');
+    // Forces the script to wait until the browser has fully drawn the HTML elements
+    document.addEventListener("DOMContentLoaded", () => {
+      
+      const video = document.getElementById('cameraFeed');
+      const apertureWindow = document.getElementById('aperture-window');
 
-    const topSlider = document.getElementById('topSlider');
-    const bottomSlider = document.getElementById('bottomSlider');
-    const leftSlider = document.getElementById('leftSlider');
-    const rightSlider = document.getElementById('rightSlider');
-    const zoomSlider = document.getElementById('zoomSlider');
-    const panYSlider = document.getElementById('panYSlider');
+      const topSlider = document.getElementById('topSlider');
+      const bottomSlider = document.getElementById('bottomSlider');
+      const leftSlider = document.getElementById('leftSlider');
+      const rightSlider = document.getElementById('rightSlider');
+      const zoomSlider = document.getElementById('zoomSlider');
+      const panYSlider = document.getElementById('panYSlider');
 
-    const topVal = document.getElementById('topVal');
-    const bottomVal = document.getElementById('bottomVal');
-    const leftVal = document.getElementById('leftVal');
-    const rightVal = document.getElementById('rightVal');
-    const zoomVal = document.getElementById('zoomVal');
-    const panYVal = document.getElementById('panYVal');
+      const topVal = document.getElementById('topVal');
+      const bottomVal = document.getElementById('bottomVal');
+      const leftVal = document.getElementById('leftVal');
+      const rightVal = document.getElementById('rightVal');
+      const zoomVal = document.getElementById('zoomVal');
+      const panYVal = document.getElementById('panYVal');
 
-    const summaryTop = document.getElementById('summaryTop');
-    const summaryBottom = document.getElementById('summaryBottom');
-    const summaryLeft = document.getElementById('summaryLeft');
-    const summaryRight = document.getElementById('summaryRight');
-    const summaryZoom = document.getElementById('summaryZoom'); /* BUG FIXED HERE */
-    const summaryPanY = document.getElementById('summaryPanY');
+      const summaryTop = document.getElementById('summaryTop');
+      const summaryBottom = document.getElementById('summaryBottom');
+      const summaryLeft = document.getElementById('summaryLeft');
+      const summaryRight = document.getElementById('summaryRight');
+      const summaryZoom = document.getElementById('summaryZoom');
+      const summaryPanY = document.getElementById('summaryPanY');
 
-    const exitBtn = document.getElementById('exitBtn');
-    const peerIdDisplay = document.getElementById('peer-id-display');
-    const callInput = document.getElementById('call-input');
-    const callBtn = document.getElementById('call-btn');
+      const exitBtn = document.getElementById('exitBtn');
+      const peerIdDisplay = document.getElementById('peer-id-display');
+      const callInput = document.getElementById('call-input');
+      const callBtn = document.getElementById('call-btn');
 
-    let localStream = null;
-    let peer = null;
+      let localStream = null;
+      let peer = null;
 
-    const shortId = Math.random().toString(36).substring(2, 6);
+      const shortId = Math.random().toString(36).substring(2, 6);
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true })
-      .then(stream => {
-        localStream = stream;
-        video.srcObject = stream;
-        initPeerJS();
-      })
-      .catch(err => alert("Camera error: " + err.message));
+      // Boot up the camera feed securely
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true })
+        .then(stream => {
+          localStream = stream;
+          video.srcObject = stream;
+          initPeerJS();
+        })
+        .catch(err => alert("Camera error: " + err.message));
 
-    function initPeerJS() {
-      peer = new Peer(shortId);
-      peer.on('open', id => peerIdDisplay.textContent = id);
-      peer.on('call', call => {
-        call.answer(localStream);
+      function initPeerJS() {
+        peer = new Peer(shortId);
+        peer.on('open', id => peerIdDisplay.textContent = id);
+        peer.on('call', call => {
+          call.answer(localStream);
+          call.on('stream', remoteStream => {
+            video.srcObject = remoteStream;
+            video.muted = false;
+          });
+        });
+      }
+
+      callBtn.addEventListener('click', () => {
+        const targetId = callInput.value.trim();
+        if (!targetId) return alert("Please enter a Caller ID.");
+        const call = peer.call(targetId, localStream);
         call.on('stream', remoteStream => {
           video.srcObject = remoteStream;
           video.muted = false;
         });
       });
-    }
 
-    callBtn.addEventListener('click', () => {
-      const targetId = callInput.value.trim();
-      if (!targetId) return alert("Please enter a Caller ID.");
-      const call = peer.call(targetId, localStream);
-      call.on('stream', remoteStream => {
-        video.srcObject = remoteStream;
-        video.muted = false;
+      // 1. SET THE VISION BOX BOUNDARY (Clipping window)
+      function updateVisionBox() {
+        const t = topSlider.value;
+        const b = bottomSlider.value;
+        const l = leftSlider.value;
+        const r = rightSlider.value;
+
+        apertureWindow.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}%)`;
+
+        topVal.textContent = t; bottomVal.textContent = b;
+        leftVal.textContent = l; rightVal.textContent = r;
+
+        summaryTop.textContent = t; summaryBottom.textContent = b;
+        summaryLeft.textContent = l; summaryRight.textContent = r;
+      }
+
+      // 2. ADJUST CAMERA FEED INSIDE THE LOCKED BOX
+      function updateCameraFeed() {
+        const z = parseFloat(zoomSlider.value).toFixed(2);
+        const y = panYSlider.value;
+
+        video.style.transform = `scale(${z}) translateY(${y}px)`;
+
+        zoomVal.textContent = z;
+        panYVal.textContent = y;
+
+        summaryZoom.textContent = z;
+        summaryPanY.textContent = y;
+      }
+
+      function bindStepButtons(minusId, plusId, slider, step, callback) {
+        document.getElementById(minusId).addEventListener('click', () => {
+          const isFloat = step.toString().includes('.');
+          if (isFloat) {
+            slider.value = (parseFloat(slider.value) - step).toFixed(2);
+          } else {
+            slider.value = parseInt(slider.value) - step;
+          }
+          callback();
+        });
+
+        document.getElementById(plusId).addEventListener('click', () => {
+          const isFloat = step.toString().includes('.');
+          if (isFloat) {
+            slider.value = (parseFloat(slider.value) + step).toFixed(2);
+          } else {
+            slider.value = parseInt(slider.value) + step;
+          }
+          callback();
+        });
+      }
+
+      topSlider.addEventListener('input', updateVisionBox);
+      bottomSlider.addEventListener('input', updateVisionBox);
+      leftSlider.addEventListener('input', updateVisionBox);
+      rightSlider.addEventListener('input', updateVisionBox);
+
+      zoomSlider.addEventListener('input', updateCameraFeed);
+      panYSlider.addEventListener('input', updateCameraFeed);
+
+      bindStepButtons('topMinus', 'topPlus', topSlider, 1, updateVisionBox);
+      bindStepButtons('bottomMinus', 'bottomPlus', bottomSlider, 1, updateVisionBox);
+      bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1, updateVisionBox);
+      bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1, updateVisionBox);
+
+      bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.05, updateCameraFeed);
+      bindStepButtons('panYMinus', 'panYPlus', panYSlider, 5, updateCameraFeed);
+
+      exitBtn.addEventListener('click', () => {
+        if (localStream) localStream.getTracks().forEach(track => track.stop());
+        window.location.href = "about:blank";
       });
-    });
-
-    // 1. SET THE VISION BOX BOUNDARY (Clipping window)
-    function updateVisionBox() {
-      const t = topSlider.value;
-      const b = bottomSlider.value;
-      const l = leftSlider.value;
-      const r = rightSlider.value;
-
-      apertureWindow.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}%)`;
-
-      topVal.textContent = t; bottomVal.textContent = b;
-      leftVal.textContent = l; rightVal.textContent = r;
-
-      summaryTop.textContent = t; summaryBottom.textContent = b;
-      summaryLeft.textContent = l; summaryRight.textContent = r;
-    }
-
-    // 2. ADJUST CAMERA FEED INSIDE THE LOCKED BOX
-    function updateCameraFeed() {
-      const z = parseFloat(zoomSlider.value).toFixed(2);
-      const y = panYSlider.value;
-
-      video.style.transform = `scale(${z}) translateY(${y}px)`;
-
-      zoomVal.textContent = z;
-      panYVal.textContent = y;
-
-      summaryZoom.textContent = z;
-      summaryPanY.textContent = y;
-    }
-
-    function bindStepButtons(minusId, plusId, slider, step, callback) {
-      document.getElementById(minusId).addEventListener('click', () => {
-        const isFloat = step.toString().includes('.');
-        if (isFloat) {
-          slider.value = (parseFloat(slider.value) - step).toFixed(2);
-        } else {
-          slider.value = parseInt(slider.value) - step;
-        }
-        callback();
-      });
-
-      document.getElementById(plusId).addEventListener('click', () => {
-        const isFloat = step.toString().includes('.');
-        if (isFloat) {
-          slider.value = (parseFloat(slider.value) + step).toFixed(2);
-        } else {
-          slider.value = parseInt(slider.value) - step;
-        }
-        callback();
-      });
-    }
-
-    topSlider.addEventListener('input', updateVisionBox);
-    bottomSlider.addEventListener('input', updateVisionBox);
-    leftSlider.addEventListener('input', updateVisionBox);
-    rightSlider.addEventListener('input', updateVisionBox);
-
-    zoomSlider.addEventListener('input', updateCameraFeed);
-    panYSlider.addEventListener('input', updateCameraFeed);
-
-    bindStepButtons('topMinus', 'topPlus', topSlider, 1, updateVisionBox);
-    bindStepButtons('bottomMinus', 'bottomPlus', bottomSlider, 1, updateVisionBox);
-    bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1, updateVisionBox);
-    bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1, updateVisionBox);
-
-    bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.05, updateCameraFeed);
-    bindStepButtons('panYMinus', 'panYPlus', panYSlider, 5, updateCameraFeed);
-
-    exitBtn.addEventListener('click', () => {
-      if (localStream) localStream.getTracks().forEach(track => track.stop());
-      window.location.href = "about:blank";
+      
     });
   </script>
 </body>
