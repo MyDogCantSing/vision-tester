@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Vision Viewfinder: Scalable Zoom & Dual Pan</title>
+  <title>Vision Viewfinder: Locked Window & Scalable Feed</title>
 
   <!-- PeerJS WebRTC Library -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -24,24 +24,24 @@
     #photo-readout {
       background-color: #ffff00;
       color: #000000;
-      padding: 5px 10px;
+      padding: 6px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 900;
       border-bottom: 2px solid #ffffff;
       z-index: 300;
     }
 
-    #readout-values { display: flex; gap: 6px; flex-wrap: wrap; }
+    #readout-values { display: flex; gap: 10px; flex-wrap: wrap; }
     #btn-group { display: flex; gap: 6px; align-items: center; }
 
     #exitBtn {
       background: #ff3b30; color: #ffffff;
       border: none; border-radius: 50%;
-      width: 28px; height: 28px;
-      font-size: 15px; font-weight: bold;
+      width: 30px; height: 30px;
+      font-size: 16px; font-weight: bold;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; flex-shrink: 0;
     }
@@ -49,23 +49,23 @@
     /* WebRTC Call Connection Bar */
     #connection-bar {
       background-color: #1c1c1e;
-      padding: 4px 12px;
+      padding: 6px 12px;
       display: flex;
       gap: 10px;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid #333;
-      font-size: 12px;
+      font-size: 13px;
     }
 
     #peer-id-display { color: #30d158; font-weight: bold; }
     #call-input {
       background: #2c2c2e; color: #fff; border: 1px solid #444;
-      padding: 3px 6px; border-radius: 6px; width: 100px; text-transform: lowercase;
+      padding: 4px 8px; border-radius: 6px; width: 110px; text-transform: lowercase;
     }
     #call-btn {
       background: #0a84ff; color: #fff; border: none;
-      padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer;
+      padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;
     }
 
     #top-bar {
@@ -80,30 +80,30 @@
 
     #controls {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px 10px;
-      padding: 4px 2%;
+      grid-template-columns: 1fr;
+      gap: 8px 12px;
+      padding: 10px 3%;
       width: 100%;
     }
 
-    .control-group { display: flex; flex-direction: column; gap: 1px; }
-    .label-row { display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; color: #ccc; }
-    .slider-val { color: #0a84ff; font-size: 11px; font-weight: bold; }
+    .control-group { display: flex; flex-direction: column; gap: 2px; }
+    .label-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #ccc; }
+    .slider-val { color: #0a84ff; font-size: 13px; font-weight: bold; }
 
-    .input-row { display: flex; align-items: center; gap: 4px; }
+    .input-row { display: flex; align-items: center; gap: 6px; }
 
     .step-btn {
       background-color: #2c2c2e; color: #0a84ff;
-      border: 1px solid #444; border-radius: 6px;
-      width: 32px; height: 26px; font-size: 15px; font-weight: bold;
+      border: 1px solid #444; border-radius: 8px;
+      width: 42px; height: 36px; font-size: 18px; font-weight: bold;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; user-select: none; flex-shrink: 0;
     }
     .step-btn:active { background-color: #0a84ff; color: #ffffff; }
 
-    input[type=range] { flex: 1; height: 24px; accent-color: #0a84ff; cursor: pointer; }
+    input[type=range] { flex: 1; height: 32px; accent-color: #0a84ff; cursor: pointer; }
 
-    /* Viewfinder Container */
+    /* Viewfinder Container - Takes up remaining screen */
     #viewfinder-container {
       position: relative;
       flex: 1; 
@@ -111,19 +111,25 @@
       background-color: #000000;
       overflow: hidden;
       z-index: 10;
-    }
-
-    /* Fixed Vision Box Aperture Window */
-    #aperture-window {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    /* Video Feed - Scales and Pans Inside the Aperture */
+    /* LOCKED Aperture Window - Fixed size and position for Peggy's vision zone */
+    #aperture-window {
+      position: absolute;
+      bottom: 20px;
+      left: 10%;
+      width: 80%;
+      height: 250px;
+      border: 3px solid #ffff00;
+      border-radius: 12px;
+      overflow: hidden;
+      background-color: #111;
+    }
+
+    /* Video Feed - Scales and Pans Inside the Locked Window */
     video {
       width: 100%; height: 100%;
       object-fit: cover;
@@ -136,11 +142,7 @@
   <div id="top-bar">
     <div id="photo-readout">
       <div id="readout-values">
-        <span>TOP: <span id="summaryTop">0</span>%</span>
-        <span>BTM: <span id="summaryBottom">0</span>%</span>
-        <span>LFT: <span id="summaryLeft">0</span>%</span>
-        <span>RGT: <span id="summaryRight">0</span>%</span>
-        <span>ZOOM: <span id="summaryZoom">1.0</span>x</span>
+        <span>SCALE: <span id="summaryZoom">1.0</span>x</span>
         <span>X: <span id="summaryPanX">0</span>px</span>
         <span>Y: <span id="summaryPanY">0</span>px</span>
       </div>
@@ -159,49 +161,12 @@
     </div>
 
     <div id="controls">
-      <!-- VISION BOX BOUNDARIES -->
+      <!-- CAMERA CONTROLS (INSIDE LOCKED WINDOW) -->
       <div class="control-group">
-        <div class="label-row"><label>Box Top Boundary</label> <span class="slider-val"><span id="topVal">0</span>%</span></div>
-        <div class="input-row">
-          <button class="step-btn" id="topMinus">-</button>
-          <input type="range" id="topSlider" min="0" max="95" value="0">
-          <button class="step-btn" id="topPlus">+</button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <div class="label-row"><label>Box Bottom Boundary</label> <span class="slider-val"><span id="bottomVal">0</span>%</span></div>
-        <div class="input-row">
-          <button class="step-btn" id="bottomMinus">-</button>
-          <input type="range" id="bottomSlider" min="0" max="95" value="0">
-          <button class="step-btn" id="bottomPlus">+</button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <div class="label-row"><label>Box Left Boundary</label> <span class="slider-val"><span id="leftVal">0</span>%</span></div>
-        <div class="input-row">
-          <button class="step-btn" id="leftMinus">-</button>
-          <input type="range" id="leftSlider" min="0" max="45" value="0">
-          <button class="step-btn" id="leftPlus">+</button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <div class="label-row"><label>Box Right Boundary</label> <span class="slider-val"><span id="rightVal">0</span>%</span></div>
-        <div class="input-row">
-          <button class="step-btn" id="rightMinus">-</button>
-          <input type="range" id="rightSlider" min="0" max="45" value="0">
-          <button class="step-btn" id="rightPlus">+</button>
-        </div>
-      </div>
-
-      <!-- SCALABLE CAMERA CONTROLS (INSIDE BOX) -->
-      <div class="control-group">
-        <div class="label-row"><label>Camera Scale (0.2x to 15x)</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
+        <div class="label-row"><label>Camera Scale (Shrink / Zoom)</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
         <div class="input-row">
           <button class="step-btn" id="zoomMinus">-</button>
-          <input type="range" id="zoomSlider" min="0.2" max="15.0" step="0.1" value="1.0">
+          <input type="range" id="zoomSlider" min="0.1" max="15.0" step="0.1" value="1.0">
           <button class="step-btn" id="zoomPlus">+</button>
         </div>
       </div>
@@ -215,7 +180,7 @@
         </div>
       </div>
 
-      <div class="control-group" style="grid-column: span 2;">
+      <div class="control-group">
         <div class="label-row"><label>Pan Up / Down</label> <span class="slider-val"><span id="panYVal">0</span>px</span></div>
         <div class="input-row">
           <button class="step-btn" id="panYMinus">-</button>
@@ -235,28 +200,15 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const video = document.getElementById('cameraFeed');
-      const apertureWindow = document.getElementById('aperture-window');
 
-      const topSlider = document.getElementById('topSlider');
-      const bottomSlider = document.getElementById('bottomSlider');
-      const leftSlider = document.getElementById('leftSlider');
-      const rightSlider = document.getElementById('rightSlider');
       const zoomSlider = document.getElementById('zoomSlider');
       const panXSlider = document.getElementById('panXSlider');
       const panYSlider = document.getElementById('panYSlider');
 
-      const topVal = document.getElementById('topVal');
-      const bottomVal = document.getElementById('bottomVal');
-      const leftVal = document.getElementById('leftVal');
-      const rightVal = document.getElementById('rightVal');
       const zoomVal = document.getElementById('zoomVal');
       const panXVal = document.getElementById('panXVal');
       const panYVal = document.getElementById('panYVal');
 
-      const summaryTop = document.getElementById('summaryTop');
-      const summaryBottom = document.getElementById('summaryBottom');
-      const summaryLeft = document.getElementById('summaryLeft');
-      const summaryRight = document.getElementById('summaryRight');
       const summaryZoom = document.getElementById('summaryZoom');
       const summaryPanX = document.getElementById('summaryPanX');
       const summaryPanY = document.getElementById('summaryPanY');
@@ -301,21 +253,6 @@
         });
       });
 
-      function updateVisionBox() {
-        const t = topSlider.value;
-        const b = bottomSlider.value;
-        const l = leftSlider.value;
-        const r = rightSlider.value;
-
-        apertureWindow.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}%)`;
-
-        topVal.textContent = t; bottomVal.textContent = b;
-        leftVal.textContent = l; rightVal.textContent = r;
-
-        summaryTop.textContent = t; summaryBottom.textContent = b;
-        summaryLeft.textContent = l; summaryRight.textContent = r;
-      }
-
       function updateCameraFeed() {
         const z = parseFloat(zoomSlider.value).toFixed(1);
         const x = panXSlider.value;
@@ -354,19 +291,9 @@
         });
       }
 
-      topSlider.addEventListener('input', updateVisionBox);
-      bottomSlider.addEventListener('input', updateVisionBox);
-      leftSlider.addEventListener('input', updateVisionBox);
-      rightSlider.addEventListener('input', updateVisionBox);
-
       zoomSlider.addEventListener('input', updateCameraFeed);
       panXSlider.addEventListener('input', updateCameraFeed);
       panYSlider.addEventListener('input', updateCameraFeed);
-
-      bindStepButtons('topMinus', 'topPlus', topSlider, 1, updateVisionBox);
-      bindStepButtons('bottomMinus', 'bottomPlus', bottomSlider, 1, updateVisionBox);
-      bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1, updateVisionBox);
-      bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1, updateVisionBox);
 
       bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.1, updateCameraFeed);
       bindStepButtons('panXMinus', 'panXPlus', panXSlider, 10, updateCameraFeed);
