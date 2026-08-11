@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Vision Viewfinder: Lockable Window & Video Controls</title>
+  <title>Vision Viewfinder: Independent Width & Height Stretch</title>
 
   <!-- PeerJS WebRTC Library -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -78,7 +78,7 @@
       flex: 0 0 auto;
     }
 
-    /* Mode Switching Banner / Lock Button */
+    /* Lock / Unlock Bar */
     #lock-bar {
       background-color: #2c2c2e;
       padding: 6px 12px;
@@ -152,7 +152,7 @@
     /* Video Feed - Scales and Pans Inside the Window */
     video {
       width: 100%; height: 100%;
-      object-fit: cover;
+      object-fit: fill; /* allows independent stretching */
       transform-origin: center center;
     }
 
@@ -165,7 +165,8 @@
     <div id="photo-readout">
       <div id="readout-values">
         <span>STATUS: <span id="summaryStatus" style="color: #ff9f0a;">UNLOCKED</span></span>
-        <span>SCALE: <span id="summaryZoom">1.0</span>x</span>
+        <span>W: <span id="summaryZoomX">1.0</span>x</span>
+        <span>H: <span id="summaryZoomY">1.0</span>x</span>
         <span>X: <span id="summaryPanX">0</span>px</span>
         <span>Y: <span id="summaryPanY">0</span>px</span>
       </div>
@@ -221,6 +222,7 @@
       <div class="control-group window-control">
         <div class="label-row"><label>Window Right Margin</label> <span class="slider-val"><span id="rightVal">10</span>%</span></div>
         <div class="input-row">
+          <button class="step-btn" id="leftMinus" style="display:none">-</button> <!-- spacer match -->
           <button class="step-btn" id="rightMinus">-</button>
           <input type="range" id="rightSlider" min="0" max="40" value="10">
           <button class="step-btn" id="rightPlus">+</button>
@@ -229,11 +231,20 @@
 
       <!-- VIDEO INSIDE WINDOW CONTROLS (ALWAYS ACTIVE) -->
       <div class="control-group">
-        <div class="label-row"><label>Video Scale (Shrink / Zoom)</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
+        <div class="label-row"><label>Video Width Scale</label> <span class="slider-val"><span id="zoomXVal">1.0</span>x</span></div>
         <div class="input-row">
-          <button class="step-btn" id="zoomMinus">-</button>
-          <input type="range" id="zoomSlider" min="0.1" max="15.0" step="0.1" value="1.0">
-          <button class="step-btn" id="zoomPlus">+</button>
+          <button class="step-btn" id="zoomXMinus">-</button>
+          <input type="range" id="zoomXSlider" min="0.1" max="10.0" step="0.1" value="1.0">
+          <button class="step-btn" id="zoomXPlus">+</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="label-row"><label>Video Height Stretch (Top/Btm)</label> <span class="slider-val"><span id="zoomYVal">1.0</span>x</span></div>
+        <div class="input-row">
+          <button class="step-btn" id="zoomYMinus">-</button>
+          <input type="range" id="zoomYSlider" min="0.1" max="10.0" step="0.1" value="1.0">
+          <button class="step-btn" id="zoomYPlus">+</button>
         </div>
       </div>
 
@@ -246,7 +257,7 @@
         </div>
       </div>
 
-      <div class="control-group" style="grid-column: span 2;">
+      <div class="control-group">
         <div class="label-row"><label>Video Pan Up / Down</label> <span class="slider-val"><span id="panYVal">0</span>px</span></div>
         <div class="input-row">
           <button class="step-btn" id="panYMinus">-</button>
@@ -272,7 +283,9 @@
       const bottomSlider = document.getElementById('bottomSlider');
       const leftSlider = document.getElementById('leftSlider');
       const rightSlider = document.getElementById('rightSlider');
-      const zoomSlider = document.getElementById('zoomSlider');
+      
+      const zoomXSlider = document.getElementById('zoomXSlider');
+      const zoomYSlider = document.getElementById('zoomYSlider');
       const panXSlider = document.getElementById('panXSlider');
       const panYSlider = document.getElementById('panYSlider');
 
@@ -280,12 +293,15 @@
       const bottomVal = document.getElementById('bottomVal');
       const leftVal = document.getElementById('leftVal');
       const rightVal = document.getElementById('rightVal');
-      const zoomVal = document.getElementById('zoomVal');
+      
+      const zoomXVal = document.getElementById('zoomXVal');
+      const zoomYVal = document.getElementById('zoomYVal');
       const panXVal = document.getElementById('panXVal');
       const panYVal = document.getElementById('panYVal');
 
       const summaryStatus = document.getElementById('summaryStatus');
-      const summaryZoom = document.getElementById('summaryZoom');
+      const summaryZoomX = document.getElementById('summaryZoomX');
+      const summaryZoomY = document.getElementById('summaryZoomY');
       const summaryPanX = document.getElementById('summaryPanX');
       const summaryPanY = document.getElementById('summaryPanY');
 
@@ -343,7 +359,7 @@
           apertureWindow.classList.add('locked');
           summaryStatus.textContent = "LOCKED";
           summaryStatus.style.color = "#30d158";
-          lockStatusText.textContent = "Window is locked. Now adjust video scale/pan inside.";
+          lockStatusText.textContent = "Window is locked. Adjust Width & Height stretch inside.";
           windowControls.forEach(el => el.classList.add('disabled-controls'));
         } else {
           lockBtn.textContent = "🔓 UNLOCKED (Click to Lock Window)";
@@ -373,17 +389,20 @@
       }
 
       function updateCameraFeed() {
-        const z = parseFloat(zoomSlider.value).toFixed(1);
+        const zx = parseFloat(zoomXSlider.value).toFixed(1);
+        const zy = parseFloat(zoomYSlider.value).toFixed(1);
         const x = panXSlider.value;
         const y = panYSlider.value;
 
-        video.style.transform = `scale(${z}) translate(${x}px, ${y}px)`;
+        video.style.transform = `scale(${zx}, ${zy}) translate(${x}px, ${y}px)`;
 
-        zoomVal.textContent = z;
+        zoomXVal.textContent = zx;
+        zoomYVal.textContent = zy;
         panXVal.textContent = x;
         panYVal.textContent = y;
 
-        summaryZoom.textContent = z;
+        summaryZoomX.textContent = zx;
+        summaryZoomY.textContent = zy;
         summaryPanX.textContent = x;
         summaryPanY.textContent = y;
       }
@@ -421,7 +440,8 @@
       leftSlider.addEventListener('input', updateWindowBounds);
       rightSlider.addEventListener('input', updateWindowBounds);
 
-      zoomSlider.addEventListener('input', updateCameraFeed);
+      zoomXSlider.addEventListener('input', updateCameraFeed);
+      zoomYSlider.addEventListener('input', updateCameraFeed);
       panXSlider.addEventListener('input', updateCameraFeed);
       panYSlider.addEventListener('input', updateCameraFeed);
 
@@ -430,7 +450,8 @@
       bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1, updateWindowBounds);
       bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1, updateWindowBounds);
 
-      bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.1, updateCameraFeed);
+      bindStepButtons('zoomXMinus', 'zoomXPlus', zoomXSlider, 0.1, updateCameraFeed);
+      bindStepButtons('zoomYMinus', 'zoomYPlus', zoomYSlider, 0.1, updateCameraFeed);
       bindStepButtons('panXMinus', 'panXPlus', panXSlider, 10, updateCameraFeed);
       bindStepButtons('panYMinus', 'panYPlus', panYSlider, 10, updateCameraFeed);
 
