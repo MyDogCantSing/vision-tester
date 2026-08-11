@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Vision Viewfinder: Dynamic Bottom-Anchored Tester</title>
+  <title>Vision Viewfinder: Pan & Crop Field Tester</title>
 
   <!-- PeerJS WebRTC Library -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -17,7 +17,7 @@
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
       display: flex;
-      flex-direction: column; /* Stacks controls top, viewfinder fills remaining bottom */
+      flex-direction: column;
     }
 
     /* High-Visibility Readout Banner */
@@ -50,7 +50,7 @@
     /* WebRTC Call Connection Bar */
     #connection-bar {
       background-color: #1c1c1e;
-      padding: 8px 12px;
+      padding: 6px 12px;
       display: flex;
       gap: 10px;
       align-items: center;
@@ -76,14 +76,14 @@
       z-index: 200;
       display: flex;
       flex-direction: column;
-      flex: 0 0 auto; /* Takes only as much height as controls require */
+      flex: 0 0 auto;
     }
 
     #controls {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px 14px;
-      padding: 8px 3%;
+      gap: 6px 14px;
+      padding: 6px 3%;
       width: 100%;
     }
 
@@ -97,15 +97,15 @@
     .step-btn {
       background-color: #2c2c2e; color: #0a84ff;
       border: 1px solid #444; border-radius: 6px;
-      width: 40px; height: 34px; font-size: 20px; font-weight: bold;
+      width: 40px; height: 32px; font-size: 18px; font-weight: bold;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; user-select: none; flex-shrink: 0;
     }
     .step-btn:active { background-color: #0a84ff; color: #ffffff; }
 
-    input[type=range] { flex: 1; height: 32px; accent-color: #0a84ff; cursor: pointer; }
+    input[type=range] { flex: 1; height: 30px; accent-color: #0a84ff; cursor: pointer; }
 
-    /* Viewfinder Area: Fills 100% of remaining vertical screen space down to the bottom */
+    /* Viewfinder Container: Fills remaining screen height */
     #viewfinder-container {
       position: relative;
       flex: 1; 
@@ -115,7 +115,7 @@
       overflow: hidden;
       z-index: 10;
       display: flex;
-      align-items: flex-end; /* Pins frame to absolute bottom */
+      align-items: flex-end;
       justify-content: center;
     }
 
@@ -130,7 +130,7 @@
     video {
       width: 100%; height: 100%;
       object-fit: cover;
-      transform-origin: center bottom; /* Zoom scales relative to the floor */
+      transform-origin: center bottom;
     }
 
     #center-cross {
@@ -154,6 +154,7 @@
         <span>LFT: <span id="summaryLeft">0</span>%</span>
         <span>RGT: <span id="summaryRight">0</span>%</span>
         <span>ZOOM: <span id="summaryZoom">1.0</span>x</span>
+        <span>PAN: <span id="summaryPan">0</span>px</span>
       </div>
       <div id="btn-group">
         <button id="exitBtn" aria-label="Exit">✕</button>
@@ -174,7 +175,7 @@
         <div class="label-row"><label>Top Boundary</label> <span class="slider-val"><span id="topVal">0</span>%</span></div>
         <div class="input-row">
           <button class="step-btn" id="topMinus">-</button>
-          <input type="range" id="topSlider" min="0" max="80" value="0">
+          <input type="range" id="topSlider" min="0" max="95" value="0">
           <button class="step-btn" id="topPlus">+</button>
         </div>
       </div>
@@ -183,7 +184,7 @@
         <div class="label-row"><label>Bottom Boundary</label> <span class="slider-val"><span id="bottomVal">0</span>%</span></div>
         <div class="input-row">
           <button class="step-btn" id="bottomMinus">-</button>
-          <input type="range" id="bottomSlider" min="0" max="80" value="0">
+          <input type="range" id="bottomSlider" min="0" max="95" value="0">
           <button class="step-btn" id="bottomPlus">+</button>
         </div>
       </div>
@@ -206,12 +207,21 @@
         </div>
       </div>
 
-      <div class="control-group full-width">
-        <div class="label-row"><label>Camera Zoom Factor</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
+      <div class="control-group">
+        <div class="label-row"><label>Camera Zoom</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
         <div class="input-row">
           <button class="step-btn" id="zoomMinus">-</button>
-          <input type="range" id="zoomSlider" min="0.5" max="4.0" step="0.05" value="1.0">
+          <input type="range" id="zoomSlider" min="0.1" max="4.0" step="0.05" value="1.0">
           <button class="step-btn" id="zoomPlus">+</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="label-row"><label>Vertical Shift (Pan Y)</label> <span class="slider-val"><span id="panVal">0</span>px</span></div>
+        <div class="input-row">
+          <button class="step-btn" id="panMinus">-</button>
+          <input type="range" id="panSlider" min="-500" max="500" step="5" value="0">
+          <button class="step-btn" id="panPlus">+</button>
         </div>
       </div>
     </div>
@@ -233,18 +243,21 @@
     const leftSlider = document.getElementById('leftSlider');
     const rightSlider = document.getElementById('rightSlider');
     const zoomSlider = document.getElementById('zoomSlider');
+    const panSlider = document.getElementById('panSlider');
 
     const topVal = document.getElementById('topVal');
     const bottomVal = document.getElementById('bottomVal');
     const leftVal = document.getElementById('leftVal');
     const rightVal = document.getElementById('rightVal');
     const zoomVal = document.getElementById('zoomVal');
+    const panVal = document.getElementById('panVal');
 
     const summaryTop = document.getElementById('summaryTop');
     const summaryBottom = document.getElementById('summaryBottom');
     const summaryLeft = document.getElementById('summaryLeft');
     const summaryRight = document.getElementById('summaryRight');
     const summaryZoom = document.getElementById('summaryZoom');
+    const summaryPan = document.getElementById('summaryPan');
 
     const exitBtn = document.getElementById('exitBtn');
     const peerIdDisplay = document.getElementById('peer-id-display');
@@ -306,32 +319,38 @@
       summaryLeft.textContent = l; summaryRight.textContent = r;
     }
 
-    function updateZoom() {
+    function updateTransform() {
       const z = parseFloat(zoomSlider.value).toFixed(2);
-      video.style.transform = `scale(${z})`;
+      const p = panSlider.value;
+
+      video.style.transform = `scale(${z}) translateY(${p}px)`;
+
       zoomVal.textContent = z;
+      panVal.textContent = p;
+
       summaryZoom.textContent = z;
+      summaryPan.textContent = p;
     }
 
-    function bindStepButtons(minusId, plusId, slider, step, isZoom = false) {
+    function bindStepButtons(minusId, plusId, slider, step, callback) {
       document.getElementById(minusId).addEventListener('click', () => {
-        if (isZoom) {
+        const isFloat = step.toString().includes('.');
+        if (isFloat) {
           slider.value = (parseFloat(slider.value) - step).toFixed(2);
-          updateZoom();
         } else {
           slider.value = parseInt(slider.value) - step;
-          updateMask();
         }
+        callback();
       });
 
       document.getElementById(plusId).addEventListener('click', () => {
-        if (isZoom) {
+        const isFloat = step.toString().includes('.');
+        if (isFloat) {
           slider.value = (parseFloat(slider.value) + step).toFixed(2);
-          updateZoom();
         } else {
           slider.value = parseInt(slider.value) + step;
-          updateMask();
         }
+        callback();
       });
     }
 
@@ -339,13 +358,17 @@
     bottomSlider.addEventListener('input', updateMask);
     leftSlider.addEventListener('input', updateMask);
     rightSlider.addEventListener('input', updateMask);
-    zoomSlider.addEventListener('input', updateZoom);
 
-    bindStepButtons('topMinus', 'topPlus', topSlider, 1);
-    bindStepButtons('bottomMinus', 'bottomPlus', bottomSlider, 1);
-    bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1);
-    bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1);
-    bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.1, true);
+    zoomSlider.addEventListener('input', updateTransform);
+    panSlider.addEventListener('input', updateTransform);
+
+    bindStepButtons('topMinus', 'topPlus', topSlider, 1, updateMask);
+    bindStepButtons('bottomMinus', 'bottomPlus', bottomSlider, 1, updateMask);
+    bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1, updateMask);
+    bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1, updateMask);
+
+    bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.05, updateTransform);
+    bindStepButtons('panMinus', 'panPlus', panSlider, 5, updateTransform);
 
     exitBtn.addEventListener('click', () => {
       if (localStream) localStream.getTracks().forEach(track => track.stop());
