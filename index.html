@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Vision Viewfinder: Bottom-Locked WebRTC Tester</title>
+  <title>Vision Viewfinder: Dynamic Bottom-Anchored Tester</title>
 
   <!-- PeerJS WebRTC Library -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -16,6 +16,8 @@
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
+      display: flex;
+      flex-direction: column; /* Stacks controls top, viewfinder fills remaining bottom */
     }
 
     /* High-Visibility Readout Banner */
@@ -68,9 +70,13 @@
     }
 
     #top-bar {
-      position: absolute; top: 0; left: 0; width: 100%;
+      position: relative;
+      width: 100%;
       background-color: rgba(0,0,0,0.95);
-      z-index: 200; display: flex; flex-direction: column;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      flex: 0 0 auto; /* Takes only as much height as controls require */
     }
 
     #controls {
@@ -99,15 +105,17 @@
 
     input[type=range] { flex: 1; height: 32px; accent-color: #0a84ff; cursor: pointer; }
 
-    /* Viewfinder Container: Anchored directly to screen bottom */
+    /* Viewfinder Area: Fills 100% of remaining vertical screen space down to the bottom */
     #viewfinder-container {
-      position: absolute; bottom: 0; left: 0;
-      width: 100%; height: 50vh;
+      position: relative;
+      flex: 1; 
+      width: 100%;
       background-color: #000000;
       border-top: 1px solid #333333;
-      overflow: hidden; z-index: 10;
+      overflow: hidden;
+      z-index: 10;
       display: flex;
-      align-items: flex-end; /* Pin viewport content to absolute bottom */
+      align-items: flex-end; /* Pins frame to absolute bottom */
       justify-content: center;
     }
 
@@ -115,14 +123,14 @@
       position: absolute; top: 0; left: 0;
       width: 100%; height: 100%;
       overflow: hidden; display: flex;
-      align-items: flex-end; /* Pin video frame to bottom */
+      align-items: flex-end;
       justify-content: center;
     }
 
     video {
       width: 100%; height: 100%;
       object-fit: cover;
-      transform-origin: center bottom; /* Zoom scales anchored from bottom edge */
+      transform-origin: center bottom; /* Zoom scales relative to the floor */
     }
 
     #center-cross {
@@ -166,7 +174,7 @@
         <div class="label-row"><label>Top Boundary</label> <span class="slider-val"><span id="topVal">0</span>%</span></div>
         <div class="input-row">
           <button class="step-btn" id="topMinus">-</button>
-          <input type="range" id="topSlider" min="0" max="45" value="0">
+          <input type="range" id="topSlider" min="0" max="80" value="0">
           <button class="step-btn" id="topPlus">+</button>
         </div>
       </div>
@@ -175,7 +183,7 @@
         <div class="label-row"><label>Bottom Boundary</label> <span class="slider-val"><span id="bottomVal">0</span>%</span></div>
         <div class="input-row">
           <button class="step-btn" id="bottomMinus">-</button>
-          <input type="range" id="bottomSlider" min="0" max="45" value="0">
+          <input type="range" id="bottomSlider" min="0" max="80" value="0">
           <button class="step-btn" id="bottomPlus">+</button>
         </div>
       </div>
