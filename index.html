@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Vision Viewfinder: Extreme Zoom & Dual Pan</title>
+  <title>Vision Viewfinder: Scalable Zoom & Dual Pan</title>
 
   <!-- PeerJS WebRTC Library -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -196,12 +196,12 @@
         </div>
       </div>
 
-      <!-- EXTREME CAMERA CONTROLS (INSIDE BOX) -->
+      <!-- SCALABLE CAMERA CONTROLS (INSIDE BOX) -->
       <div class="control-group">
-        <div class="label-row"><label>Camera Zoom (Up to 15x)</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
+        <div class="label-row"><label>Camera Scale (0.2x to 15x)</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
         <div class="input-row">
           <button class="step-btn" id="zoomMinus">-</button>
-          <input type="range" id="zoomSlider" min="1.0" max="15.0" step="0.2" value="1.0">
+          <input type="range" id="zoomSlider" min="0.2" max="15.0" step="0.1" value="1.0">
           <button class="step-btn" id="zoomPlus">+</button>
         </div>
       </div>
@@ -336,9 +336,9 @@
         document.getElementById(minusId).addEventListener('click', () => {
           const isFloat = step.toString().includes('.');
           if (isFloat) {
-            slider.value = (parseFloat(slider.value) - step).toFixed(1);
+            slider.value = Math.max(parseFloat(slider.min), parseFloat(slider.value) - step).toFixed(1);
           } else {
-            slider.value = parseInt(slider.value) - step;
+            slider.value = Math.max(parseInt(slider.min), parseInt(slider.value) - step);
           }
           callback();
         });
@@ -346,9 +346,9 @@
         document.getElementById(plusId).addEventListener('click', () => {
           const isFloat = step.toString().includes('.');
           if (isFloat) {
-            slider.value = (parseFloat(slider.value) + step).toFixed(1);
+            slider.value = Math.min(parseFloat(slider.max), parseFloat(slider.value) + step).toFixed(1);
           } else {
-            slider.value = parseInt(slider.value) + step;
+            slider.value = Math.min(parseInt(slider.max), parseInt(slider.value) + step);
           }
           callback();
         });
@@ -368,7 +368,7 @@
       bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1, updateVisionBox);
       bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1, updateVisionBox);
 
-      bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.2, updateCameraFeed);
+      bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.1, updateCameraFeed);
       bindStepButtons('panXMinus', 'panXPlus', panXSlider, 10, updateCameraFeed);
       bindStepButtons('panYMinus', 'panYPlus', panYSlider, 10, updateCameraFeed);
 
