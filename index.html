@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Vision Viewfinder: Locked Window & Scalable Feed</title>
+  <title>Vision Viewfinder: Lockable Window & Video Controls</title>
 
   <!-- PeerJS WebRTC Library -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -28,20 +28,20 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 900;
       border-bottom: 2px solid #ffffff;
       z-index: 300;
     }
 
-    #readout-values { display: flex; gap: 10px; flex-wrap: wrap; }
+    #readout-values { display: flex; gap: 8px; flex-wrap: wrap; }
     #btn-group { display: flex; gap: 6px; align-items: center; }
 
     #exitBtn {
       background: #ff3b30; color: #ffffff;
       border: none; border-radius: 50%;
-      width: 30px; height: 30px;
-      font-size: 16px; font-weight: bold;
+      width: 28px; height: 28px;
+      font-size: 15px; font-weight: bold;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; flex-shrink: 0;
     }
@@ -49,23 +49,23 @@
     /* WebRTC Call Connection Bar */
     #connection-bar {
       background-color: #1c1c1e;
-      padding: 6px 12px;
+      padding: 4px 12px;
       display: flex;
       gap: 10px;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid #333;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     #peer-id-display { color: #30d158; font-weight: bold; }
     #call-input {
       background: #2c2c2e; color: #fff; border: 1px solid #444;
-      padding: 4px 8px; border-radius: 6px; width: 110px; text-transform: lowercase;
+      padding: 3px 6px; border-radius: 6px; width: 100px; text-transform: lowercase;
     }
     #call-btn {
       background: #0a84ff; color: #fff; border: none;
-      padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;
+      padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer;
     }
 
     #top-bar {
@@ -78,32 +78,51 @@
       flex: 0 0 auto;
     }
 
+    /* Mode Switching Banner / Lock Button */
+    #lock-bar {
+      background-color: #2c2c2e;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #444;
+    }
+
+    #lockBtn {
+      background: #ff9f0a; color: #000; border: none;
+      padding: 6px 16px; border-radius: 8px; font-weight: 900; font-size: 13px; cursor: pointer;
+    }
+    #lockBtn.locked {
+      background: #30d158; color: #000;
+    }
+    #lock-status-text { font-size: 12px; font-weight: bold; color: #ccc; }
+
     #controls {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px 12px;
-      padding: 10px 3%;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 10px;
+      padding: 6px 2%;
       width: 100%;
     }
 
-    .control-group { display: flex; flex-direction: column; gap: 2px; }
-    .label-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: #ccc; }
-    .slider-val { color: #0a84ff; font-size: 13px; font-weight: bold; }
+    .control-group { display: flex; flex-direction: column; gap: 1px; }
+    .label-row { display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; color: #ccc; }
+    .slider-val { color: #0a84ff; font-size: 11px; font-weight: bold; }
 
-    .input-row { display: flex; align-items: center; gap: 6px; }
+    .input-row { display: flex; align-items: center; gap: 4px; }
 
     .step-btn {
       background-color: #2c2c2e; color: #0a84ff;
-      border: 1px solid #444; border-radius: 8px;
-      width: 42px; height: 36px; font-size: 18px; font-weight: bold;
+      border: 1px solid #444; border-radius: 6px;
+      width: 30px; height: 24px; font-size: 14px; font-weight: bold;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; user-select: none; flex-shrink: 0;
     }
     .step-btn:active { background-color: #0a84ff; color: #ffffff; }
 
-    input[type=range] { flex: 1; height: 32px; accent-color: #0a84ff; cursor: pointer; }
+    input[type=range] { flex: 1; height: 22px; accent-color: #0a84ff; cursor: pointer; }
 
-    /* Viewfinder Container - Takes up remaining screen */
+    /* Viewfinder Container */
     #viewfinder-container {
       position: relative;
       flex: 1; 
@@ -111,30 +130,33 @@
       background-color: #000000;
       overflow: hidden;
       z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    /* LOCKED Aperture Window - Fixed size and position for Peggy's vision zone */
+    /* Yellow Aperture Window (Peggy's Visible Window) */
     #aperture-window {
       position: absolute;
-      bottom: 20px;
+      top: 50%;
       left: 10%;
-      width: 80%;
-      height: 250px;
-      border: 3px solid #ffff00;
+      right: 10%;
+      bottom: 10%;
+      border: 4px solid #ffff00;
       border-radius: 12px;
       overflow: hidden;
       background-color: #111;
+      transition: border-color 0.2s ease;
+    }
+    #aperture-window.locked {
+      border-color: #30d158; /* turns green when locked */
     }
 
-    /* Video Feed - Scales and Pans Inside the Locked Window */
+    /* Video Feed - Scales and Pans Inside the Window */
     video {
       width: 100%; height: 100%;
       object-fit: cover;
       transform-origin: center center;
     }
+
+    .disabled-controls { opacity: 0.4; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -142,6 +164,7 @@
   <div id="top-bar">
     <div id="photo-readout">
       <div id="readout-values">
+        <span>STATUS: <span id="summaryStatus" style="color: #ff9f0a;">UNLOCKED</span></span>
         <span>SCALE: <span id="summaryZoom">1.0</span>x</span>
         <span>X: <span id="summaryPanX">0</span>px</span>
         <span>Y: <span id="summaryPanY">0</span>px</span>
@@ -160,10 +183,53 @@
       </div>
     </div>
 
+    <!-- Lock / Unlock Bar -->
+    <div id="lock-bar">
+      <span id="lock-status-text">Step 1: Size Peggy's Window, then Lock it.</span>
+      <button id="lockBtn">🔓 UNLOCKED (Click to Lock Window)</button>
+    </div>
+
     <div id="controls">
-      <!-- CAMERA CONTROLS (INSIDE LOCKED WINDOW) -->
+      <!-- WINDOW SIZING CONTROLS (DISABLED WHEN LOCKED) -->
+      <div class="control-group window-control">
+        <div class="label-row"><label>Window Top Position</label> <span class="slider-val"><span id="topVal">50</span>%</span></div>
+        <div class="input-row">
+          <button class="step-btn" id="topMinus">-</button>
+          <input type="range" id="topSlider" min="0" max="85" value="50">
+          <button class="step-btn" id="topPlus">+</button>
+        </div>
+      </div>
+
+      <div class="control-group window-control">
+        <div class="label-row"><label>Window Bottom Position</label> <span class="slider-val"><span id="bottomVal">10</span>%</span></div>
+        <div class="input-row">
+          <button class="step-btn" id="bottomMinus">-</button>
+          <input type="range" id="bottomSlider" min="0" max="85" value="10">
+          <button class="step-btn" id="bottomPlus">+</button>
+        </div>
+      </div>
+
+      <div class="control-group window-control">
+        <div class="label-row"><label>Window Left Margin</label> <span class="slider-val"><span id="leftVal">10</span>%</span></div>
+        <div class="input-row">
+          <button class="step-btn" id="leftMinus">-</button>
+          <input type="range" id="leftSlider" min="0" max="40" value="10">
+          <button class="step-btn" id="leftPlus">+</button>
+        </div>
+      </div>
+
+      <div class="control-group window-control">
+        <div class="label-row"><label>Window Right Margin</label> <span class="slider-val"><span id="rightVal">10</span>%</span></div>
+        <div class="input-row">
+          <button class="step-btn" id="rightMinus">-</button>
+          <input type="range" id="rightSlider" min="0" max="40" value="10">
+          <button class="step-btn" id="rightPlus">+</button>
+        </div>
+      </div>
+
+      <!-- VIDEO INSIDE WINDOW CONTROLS (ALWAYS ACTIVE) -->
       <div class="control-group">
-        <div class="label-row"><label>Camera Scale (Shrink / Zoom)</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
+        <div class="label-row"><label>Video Scale (Shrink / Zoom)</label> <span class="slider-val"><span id="zoomVal">1.0</span>x</span></div>
         <div class="input-row">
           <button class="step-btn" id="zoomMinus">-</button>
           <input type="range" id="zoomSlider" min="0.1" max="15.0" step="0.1" value="1.0">
@@ -172,7 +238,7 @@
       </div>
 
       <div class="control-group">
-        <div class="label-row"><label>Pan Left / Right</label> <span class="slider-val"><span id="panXVal">0</span>px</span></div>
+        <div class="label-row"><label>Video Pan Left / Right</label> <span class="slider-val"><span id="panXVal">0</span>px</span></div>
         <div class="input-row">
           <button class="step-btn" id="panXMinus">-</button>
           <input type="range" id="panXSlider" min="-1000" max="1000" step="10" value="0">
@@ -180,8 +246,8 @@
         </div>
       </div>
 
-      <div class="control-group">
-        <div class="label-row"><label>Pan Up / Down</label> <span class="slider-val"><span id="panYVal">0</span>px</span></div>
+      <div class="control-group" style="grid-column: span 2;">
+        <div class="label-row"><label>Video Pan Up / Down</label> <span class="slider-val"><span id="panYVal">0</span>px</span></div>
         <div class="input-row">
           <button class="step-btn" id="panYMinus">-</button>
           <input type="range" id="panYSlider" min="-1000" max="1000" step="10" value="0">
@@ -200,24 +266,39 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const video = document.getElementById('cameraFeed');
+      const apertureWindow = document.getElementById('aperture-window');
 
+      const topSlider = document.getElementById('topSlider');
+      const bottomSlider = document.getElementById('bottomSlider');
+      const leftSlider = document.getElementById('leftSlider');
+      const rightSlider = document.getElementById('rightSlider');
       const zoomSlider = document.getElementById('zoomSlider');
       const panXSlider = document.getElementById('panXSlider');
       const panYSlider = document.getElementById('panYSlider');
 
+      const topVal = document.getElementById('topVal');
+      const bottomVal = document.getElementById('bottomVal');
+      const leftVal = document.getElementById('leftVal');
+      const rightVal = document.getElementById('rightVal');
       const zoomVal = document.getElementById('zoomVal');
       const panXVal = document.getElementById('panXVal');
       const panYVal = document.getElementById('panYVal');
 
+      const summaryStatus = document.getElementById('summaryStatus');
       const summaryZoom = document.getElementById('summaryZoom');
       const summaryPanX = document.getElementById('summaryPanX');
       const summaryPanY = document.getElementById('summaryPanY');
+
+      const lockBtn = document.getElementById('lockBtn');
+      const lockStatusText = document.getElementById('lock-status-text');
+      const windowControls = document.querySelectorAll('.window-control');
 
       const exitBtn = document.getElementById('exitBtn');
       const peerIdDisplay = document.getElementById('peer-id-display');
       const callInput = document.getElementById('call-input');
       const callBtn = document.getElementById('call-btn');
 
+      let isLocked = false;
       let localStream = null;
       let peer = null;
 
@@ -253,6 +334,44 @@
         });
       });
 
+      // Lock / Unlock Window Toggle
+      lockBtn.addEventListener('click', () => {
+        isLocked = !isLocked;
+        if (isLocked) {
+          lockBtn.textContent = "🔒 LOCKED (Click to Unlock Window)";
+          lockBtn.classList.add('locked');
+          apertureWindow.classList.add('locked');
+          summaryStatus.textContent = "LOCKED";
+          summaryStatus.style.color = "#30d158";
+          lockStatusText.textContent = "Window is locked. Now adjust video scale/pan inside.";
+          windowControls.forEach(el => el.classList.add('disabled-controls'));
+        } else {
+          lockBtn.textContent = "🔓 UNLOCKED (Click to Lock Window)";
+          lockBtn.classList.remove('locked');
+          apertureWindow.classList.remove('locked');
+          summaryStatus.textContent = "UNLOCKED";
+          summaryStatus.style.color = "#ff9f0a";
+          lockStatusText.textContent = "Step 1: Size Peggy's Window, then Lock it.";
+          windowControls.forEach(el => el.classList.remove('disabled-controls'));
+        }
+      });
+
+      function updateWindowBounds() {
+        if (isLocked) return;
+        const t = topSlider.value;
+        const b = bottomSlider.value;
+        const l = leftSlider.value;
+        const r = rightSlider.value;
+
+        apertureWindow.style.top = t + '%';
+        apertureWindow.style.bottom = b + '%';
+        apertureWindow.style.left = l + '%';
+        apertureWindow.style.right = r + '%';
+
+        topVal.textContent = t; bottomVal.textContent = b;
+        leftVal.textContent = l; rightVal.textContent = r;
+      }
+
       function updateCameraFeed() {
         const z = parseFloat(zoomSlider.value).toFixed(1);
         const x = panXSlider.value;
@@ -271,6 +390,9 @@
 
       function bindStepButtons(minusId, plusId, slider, step, callback) {
         document.getElementById(minusId).addEventListener('click', () => {
+          if (slider.id.includes('top') || slider.id.includes('bottom') || slider.id.includes('left') || slider.id.includes('right')) {
+            if (isLocked) return;
+          }
           const isFloat = step.toString().includes('.');
           if (isFloat) {
             slider.value = Math.max(parseFloat(slider.min), parseFloat(slider.value) - step).toFixed(1);
@@ -281,6 +403,9 @@
         });
 
         document.getElementById(plusId).addEventListener('click', () => {
+          if (slider.id.includes('top') || slider.id.includes('bottom') || slider.id.includes('left') || slider.id.includes('right')) {
+            if (isLocked) return;
+          }
           const isFloat = step.toString().includes('.');
           if (isFloat) {
             slider.value = Math.min(parseFloat(slider.max), parseFloat(slider.value) + step).toFixed(1);
@@ -291,9 +416,19 @@
         });
       }
 
+      topSlider.addEventListener('input', updateWindowBounds);
+      bottomSlider.addEventListener('input', updateWindowBounds);
+      leftSlider.addEventListener('input', updateWindowBounds);
+      rightSlider.addEventListener('input', updateWindowBounds);
+
       zoomSlider.addEventListener('input', updateCameraFeed);
       panXSlider.addEventListener('input', updateCameraFeed);
       panYSlider.addEventListener('input', updateCameraFeed);
+
+      bindStepButtons('topMinus', 'topPlus', topSlider, 1, updateWindowBounds);
+      bindStepButtons('bottomMinus', 'bottomPlus', bottomSlider, 1, updateWindowBounds);
+      bindStepButtons('leftMinus', 'leftPlus', leftSlider, 1, updateWindowBounds);
+      bindStepButtons('rightMinus', 'rightPlus', rightSlider, 1, updateWindowBounds);
 
       bindStepButtons('zoomMinus', 'zoomPlus', zoomSlider, 0.1, updateCameraFeed);
       bindStepButtons('panXMinus', 'panXPlus', panXSlider, 10, updateCameraFeed);
