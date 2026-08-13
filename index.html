@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Vision Viewfinder: Independent Width & Height Stretch</title>
+  <title>Vision Viewfinder: Rear Camera Prototype</title>
 
   <!-- PeerJS WebRTC Library -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -222,8 +222,7 @@
       <div class="control-group window-control">
         <div class="label-row"><label>Window Right Margin</label> <span class="slider-val"><span id="rightVal">10</span>%</span></div>
         <div class="input-row">
-          <button class="step-btn" id="leftMinus" style="display:none">-</button> <!-- spacer match -->
-          <button class="step-btn" id="rightMinus">-</button>
+          <button class="step-btn" id="rightMinus" style="visibility: hidden;">-</button>
           <input type="range" id="rightSlider" min="0" max="40" value="10">
           <button class="step-btn" id="rightPlus">+</button>
         </div>
@@ -320,7 +319,8 @@
 
       const shortId = Math.random().toString(36).substring(2, 6);
 
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true })
+      // Requests the rear/environment camera for the glasses-mounted simulation
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: true })
         .then(stream => {
           localStream = stream;
           video.srcObject = stream;
